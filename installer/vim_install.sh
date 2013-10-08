@@ -6,5 +6,5 @@ source ${CUR_DIR}/distro.sh
 
 CMD=$(package_installer)
 
-sudo ${CMD} install vim
+${CMD} install vim
 

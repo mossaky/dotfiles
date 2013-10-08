@@ -1,0 +1,30 @@
+" ------------------------------------------
+" Plugin 読込み
+" ------------------------------------------
+filetype off
+
+if has('vim_starting')
+ set runtimepath+=~/.vim/bundle/neobundle.vim
+ call neobundle#rc(expand('~/.vim/bundle/'))
+endif
+
+NeoBundle 'git://github.com/Shougo/neobundle.vim.git'
+NeoBundle 'git://github.com/kien/ctrlp.vim.git'
+NeoBundle 'git://github.com/scrooloose/nerdtree.git'
+NeoBundle 'git://github.com/scrooloose/syntastic.git'
+" 日本語ヘルプ
+NeoBundle 'vim-jp/vimdoc-ja'
+NeoBundle 'Shougo/unite.vim'
+NeoBundle 'Shougo/vimproc'
+
+" Color Schemas
+NeoBundle 'ujihisa/unite-colorscheme'
+NeoBundle 'tomasr/molokai'
+NeoBundle 'altercation/vim-colors-solarized'
+NeoBundle 'vim-scripts/newspaper.vim'
+NeoBundle 'nanotech/jellybeans.vim'
+
+NeoBundle 'bling/vim-airline'
+syntax on
+filetype plugin indent on
+

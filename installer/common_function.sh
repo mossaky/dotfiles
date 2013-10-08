@@ -1,18 +1,18 @@
 #! /bin/bash 
+# common_function.sh
 
 function package_installer() {
 	case $(choose_ostype) in
 		darwin*)
-			cmd=$(which brew)
+			echo $(which brew)
 		;;
 		redhat*)
-			cmd=$(which yum)
+			echo "sudo "$(which yum)
 		;;
 		ubuntu*)
-			cmd=$(which aptitude)
+			echo "sudo "$(which aptitude)
 		;;
 	esac
-	echo ${cmd}
 	return 0
 }
 
@@ -40,4 +40,19 @@ function choose_linux() {
 		;;
 	esac
 	return 0
+}
+
+function die() {
+	echo $1 >& 2
+	exit 1
+}
+
+function write_profile() {
+	[[ ! $(cat $2 | grep "$1") ]] && echo "$1" >> $2
+}
+
+function load_profile() {
+	for p in $(grep "^/" /etc/shells); do
+		exec $p -l
+	done
 }

@@ -1,0 +1,115 @@
+diff -ur tmp/ec2ssh/lib/ec2ssh/cli.rb .rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/ec2ssh-2.0.6/lib/ec2ssh/cli.rb
+--- tmp/ec2ssh/lib/ec2ssh/cli.rb	2013-10-08 17:04:31.000000000 +0900
++++ .rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/ec2ssh-2.0.6/lib/ec2ssh/cli.rb	2013-09-17 19:50:48.000000000 +0900
+@@ -33,7 +33,8 @@
+       end
+ 
+       config.parse!
+-      sections = merge_sections(config)
++      #sections = merge_sections(config)
++      sections = merge_proxy_sections(config)
+       config_str = config.wrap(sections.join("\n"))
+       config.replace! config_str
+       yellow config_str
+@@ -82,6 +83,38 @@
+         end
+       end
+ 
++      def merge_proxy_sections(config)
++        section_str = hosts.map {|h|
++          s = ""
++          s << "Host #{h[:host]}\n"
++          if !h[:identity_file].nil?
++            s << "\tIdentityFile\t#{h[:identity_file]}\n"
++          end
++          s << "\tHostname\t#{h[:hostname]}\n"
++          if !h[:proxy].nil?
++            s << "\tProxyCommand #{h[:proxy]}\n"
++          end
++          s << "\n"
++        }.join
++        config.sections[options.aws_key] ||= SshConfig::Section.new(
++          options.aws_key,
++          section_str
++        )
++
++        sections =  config.sections.values.map do |section|
++          if (
++              # section is matched
++              (section.name == options.aws_key) ||
++              # for backward compatibility
++              (config.sections.size == 1 && options.aws_key != 'default')
++          )
++            section.name = options.aws_key
++            section.replace!(section_str)
++          end
++          section.to_s
++        end
++      end
++
+       def merge_sections(config)
+         section_str = hosts.map { |h| <<-END }.join
+ Host #{h[:host]}
+diff -ur tmp/ec2ssh/lib/ec2ssh/hosts.rb .rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/ec2ssh-2.0.6/lib/ec2ssh/hosts.rb
+--- tmp/ec2ssh/lib/ec2ssh/hosts.rb	2013-10-08 17:04:31.000000000 +0900
++++ .rbenv/versions/1.9.3-p448/lib/ruby/gems/1.9.1/gems/ec2ssh-2.0.6/lib/ec2ssh/hosts.rb	2013-09-25 19:04:36.000000000 +0900
+@@ -4,7 +4,10 @@
+ module Ec2ssh
+   class AwsEnvNotDefined < StandardError; end
+   class Hosts
++    attr_reader :keyname
++
+     def initialize(dotfile, keyname)
++      @keyname = keyname
+       @dotfile = dotfile
+       @ec2 = Hash.new do |h,region|
+         key = dotfile.aws_key(keyname)
+@@ -19,11 +22,47 @@
+ 
+     def all
+       @dotfile['regions'].map {|region|
+-        process_region region
++        #process_region region
++        process_proxy_region region
+       }.flatten
+     end
+ 
+     private
++      def process_proxy_region(region)
++        # Proxyとなる踏台サーバの抽出
++        proxy = instances(region).map {|proxy_instance|
++          name_tag = proxy_instance[:tag_set].find {|tag| tag[:key] == 'Name'}
++          next nil if proxy_instance[:instance_state][:name] != "running" || name_tag[:value] !~ /-bas-/ || !(name_tag[:value] =~ /#{self.keyname}/)
++          prefix = name_tag[:value].split("-")[0,2].join("-")
++          id_file = "%d/.ssh/#{name_tag[:value].split('-')[0]}/#{prefix}_#{ENV['USER']}.pem"
++          hostname = proxy_instance[:ip_address]
++          {:host => "#{name_tag[:value]}", :identity_file => "#{id_file}", :hostname => "#{hostname}"}
++        }.compact
++        # EC2インスタンスの設定を抽出
++        ec2 = instances(region).map {|instance|
++          name_tag = instance[:tag_set].find {|tag| tag[:key] == 'Name'}
++          next nil if instance[:instance_state][:name] != "running" || name_tag.nil? \
++              || name_tag[:value].nil? \
++              || name_tag[:value] =~ /-bas-/ \
++              || name_tag[:value] =~ /-d-/ \
++              || !(name_tag[:value] =~ /#{self.keyname}/)
++          name = name_tag[:value]
++          split_name = name.split("-")
++          stage = split_name[1]
++          prefix = split_name[0,2].join("-")
++          pem = "#{prefix}_#{ENV['USER']}.pem"
++          if proxy.nil? || proxy.empty?
++            address = instance[:ip_address]
++            {:host=> "#{name}", :identity_file => "%d/.ssh/#{split_name[0]}/#{pem}", :hostname => "#{address}"}
++          else
++            phost = proxy.find {|i| i[:host] =~ /-#{stage}-/ }[:host]
++            address = instance[:private_ip_address] ? instance[:private_ip_address] : instance[:ip_address]
++            {:host => "#{name}", :identity_file => "%d/.ssh/#{split_name[0]}/#{pem}", :hostname => "#{address}", :proxy => "ssh #{phost} nc %h %p"}
++          end
++        }.compact.sort {|a, b| a[:host] <=> b[:host] }
++        ec2.concat(proxy).sort{|a, b| a[:host] <=> b[:host]}
++      end
++
+       def process_region(region)
+         instances(region).map {|instance|
+           name_tag = instance[:tag_set].find {|tag| tag[:key] == 'Name' }

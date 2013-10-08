@@ -1,4 +1,9 @@
-export JAVA_HOME=/usr/local/java
+if [[ ${OSTYPE} == darwin* ]]; then
+	export JAVA_HOME=/Library/Java/Home
+else
+	export JAVA_HOME=/usr/local/java
+fi
+
 export GGTS_HOME=${HOME}/springsource/ggts-3.3.0.RELEASE
 export GRAILS_HOME=${HOME}/springsource/grails-2.2.3
 

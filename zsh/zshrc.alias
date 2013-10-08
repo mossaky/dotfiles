@@ -1,0 +1,23 @@
+### ZSH Alias Settings
+
+# ls
+alias la='ls -a'
+alias lf='ls -F'
+alias ll='ls -la'
+
+# du
+alias du="du -h"
+alias df="df -h"
+alias duh="du -h ./ --max-depth=1"
+
+# grep
+alias grep='grep --color=auto -ERUIn'
+
+alias rbvers="rbenv versions"
+alias ec2ssh="ec2sshw"
+function ec2sshw() {
+ RUBY_VERSION=1.9.3-p448
+ rbenv shell ${RUBY_VERSION}
+ ${HOME}/.rbenv/shims/ec2ssh "$@"
+ rbenv shell --unset
+}

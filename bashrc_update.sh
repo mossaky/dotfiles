@@ -17,9 +17,9 @@ cat ${HOME}/dotfiles/.oh-my-zsh/plugins/ggts/ggts.plugin.zsh >> ${RC_CUSTOM}
 echo "source ${HOME}/.rvm/scripts/rvm" >> ${RC_CUSTOM}
 
 # PerlBrew Env
-echo "source ${HOME}/perl5/perlbrew/etc/bashrc" >> ${RC_CUSTOM}
+#echo "source ${HOME}/perl5/perlbrew/etc/bashrc" >> ${RC_CUSTOM}
 
 # PythonBrew env
-echo '[[ -s $HOME/.pythonbrew/etc/bashrc ]] && source $HOME/.pythonbrew/etc/bashrc' >> ${RC_CUSTOM}
+#echo '[[ -s $HOME/.pythonbrew/etc/bashrc ]] && source $HOME/.pythonbrew/etc/bashrc' >> ${RC_CUSTOM}
 
 source ${HOME}/.bashrc
